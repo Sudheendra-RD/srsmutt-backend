@@ -39,7 +39,9 @@ def proxy():
         nakshatra = vasara_nakshatra_yoga_karna_arr[2]
         yoga = vasara_nakshatra_yoga_karna_arr[4]
         karna = vasara_nakshatra_yoga_karna_arr[6]
-        today_special = soup.find('div', class_='mtitle').contents[1]
+        today_special = ''
+        if (len(soup.find('div', class_='mtitle').contents) > 1):
+            today_special = soup.find('div', class_='mtitle').contents[1]
         final_arr = soup.find_all('div', class_='txt')
         sunrise = final_arr[0].contents[1]
         sunset = final_arr[1].contents[1]
@@ -91,4 +93,5 @@ def proxy():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    # app.run(debug=True, host='0.0.0.0', port=5000)
 
