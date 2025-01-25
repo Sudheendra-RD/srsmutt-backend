@@ -87,7 +87,7 @@ def proxy():
     except requests.RequestException as e:
         # Handle errors
         return jsonify({
-            "error": "Failed to forward the request.",
+            "error": "Failed to forward the request:",
             "details": str(e)
         }), 500
 
