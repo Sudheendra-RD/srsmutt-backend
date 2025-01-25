@@ -3,7 +3,7 @@ name: Flask App Deployment
 on:
   push:
     branches:
-      - main  # Trigger pipeline on push to the main branch
+      - master  # Trigger pipeline on push to the main branch
 
 jobs:
   deploy:
@@ -33,7 +33,7 @@ jobs:
       run: |
         ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
         cd ${{ secrets.APP_PATH }}
-        source venv/bin/activate
+        source myenv/bin/activate
         pip install -r requirements.txt
-        sudo systemctl restart your-flask-app.service
+        sudo systemctl restart gunicorn.service
         EOF
