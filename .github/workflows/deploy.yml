@@ -1,0 +1,39 @@
+name: Flask App Deployment
+
+on:
+  push:
+    branches:
+      - main  # Trigger pipeline on push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout the repository
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # 2. Set up SSH for EC2 access
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    # 3. Transfer updated files to EC2
+    - name: Deploy to EC2
+      run: |
+        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ${{ secrets.APP_PATH }}"
+        rsync -avz --exclude '.git' ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.APP_PATH }}
+
+    # 4. Restart Flask app service
+    - name: Restart Flask App
+      run: |
+        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+        cd ${{ secrets.APP_PATH }}
+        source venv/bin/activate
+        pip install -r requirements.txt
+        sudo systemctl restart your-flask-app.service
+        EOF
