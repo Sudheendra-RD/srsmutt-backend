@@ -1,8 +1,12 @@
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 import requests, os
-from datetime import datetime
+import datetime
 from bs4 import BeautifulSoup
+from astral import LocationInfo
+from astral.sun import sun
+from datetime import datetime
+import pytz
 
 # current_date = datetime.now().strftime("%Y-%m-%d")
 # qweqwe = '2025-01-25'
@@ -43,12 +47,31 @@ def proxy():
         if (len(soup.find('div', class_='mtitle').contents) > 1):
             today_special = soup.find('div', class_='mtitle').contents[1]
         final_arr = soup.find_all('div', class_='txt')
-        sunrise = final_arr[0].contents[1]
-        sunset = final_arr[1].contents[1]
-        shraddha_tithi = final_arr[2].contents[1]
-        rahukala = final_arr[3].contents[1]
-        gulika_kala = final_arr[4].contents[1]
-        yamaganda_kala = final_arr[5].contents[1]
+        try:
+            sunrise = get_sunrise_sunset_time('rise', form_data['date'])
+        except IndexError:
+            sunrise = ''
+        try:
+            sunset = get_sunrise_sunset_time('set', form_data['date'])
+        except IndexError:
+            sunset = ''
+        try:
+            shraddha_tithi = final_arr[2].contents[1]
+        except IndexError:
+            shraddha_tithi = ''
+        try:
+            rahukala = get_rahukala(vasara)
+        except IndexError:
+            rahukala = ''
+        try:
+            gulika_kala = get_gulika_kala(vasara)
+        except IndexError:
+            gulika_kala = ''
+        try:
+            yamaganda_kala = get_yamaganda_kala(vasara)
+        except IndexError:
+            yamaganda_kala = ''
+            
         response_json = {
             'samvatsara': samvatsara,
             'ayana': ayana,
@@ -90,6 +113,78 @@ def proxy():
             "error": "Failed to forward the request:",
             "details": str(e)
         }), 500
+
+def get_rahukala(vasara):
+    match vasara:
+        case 'Monday':
+            return '07:30 AM - 09:00 AM'
+        case 'Tuesday':
+            return '03:00 PM - 04:30 PM'
+        case 'Wednesday':
+            return '12:00 PM - 01:30 PM'
+        case 'Thursday':
+            return '01:30 PM - 03:00 PM'
+        case 'Friday':
+            return '10:30 AM - 12:00 PM'
+        case 'Saturday':
+            return '09:00 AM - 10:30 AM'
+        case 'Sunday':
+            return '04:30 PM - 06:00 PM'
+        
+def get_gulika_kala(vasara):
+    match vasara:
+        case 'Monday':
+            return '01:30 PM - 03:00 PM'
+        case 'Tuesday':
+            return '12:00 PM - 01:30 PM'
+        case 'Wednesday':
+            return '10:30 AM - 12:00 PM'
+        case 'Thursday':
+            return '09:00 AM - 10:30 AM'
+        case 'Friday':
+            return '07:30 AM - 09:00 AM'
+        case 'Saturday':
+            return '06:00 AM - 07:30 AM'
+        case 'Sunday':
+            return '03:00 PM - 04:30 PM'
+
+def get_yamaganda_kala(vasara):
+    match vasara:
+        case 'Monday':
+            return '10:30 AM - 12:00 PM'
+        case 'Tuesday':
+            return '09:00 AM - 10:30 AM'
+        case 'Wednesday':
+            return '07:30 AM - 09:00 AM'
+        case 'Thursday':
+            return '06:00 AM - 07:30 AM'
+        case 'Friday':
+            return '03:00 PM - 04:30 PM'
+        case 'Saturday':
+            return '01:30 PM - 03:00 PM'
+        case 'Sunday':
+            return '12:00 PM - 01:30 PM'
+        
+def get_sunrise_sunset_time(rise_or_set, date):
+    # Define Bangalore location
+    bangalore = LocationInfo(name="Bangalore", region="India", timezone="Asia/Kolkata", latitude=12.9716, longitude=77.5946)
+
+    try:
+        # Parse the input date
+        custom_date = datetime.strptime(date, "%Y-%m-%d").date()
+        
+        # Get sunrise and sunset times
+        s = sun(bangalore.observer, date=custom_date, tzinfo=bangalore.timezone)
+
+    except ValueError:
+        print("Invalid date format. Please enter the date in YYYY-MM-DD format.")
+
+    # Format the IST times as HH:MM AM/PM.
+    if rise_or_set == 'rise':
+        return s['sunrise'].strftime('%I:%M:%S %p')
+    else:
+        return s['sunset'].strftime('%I:%M:%S %p')
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
