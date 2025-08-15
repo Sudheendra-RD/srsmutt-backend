@@ -186,7 +186,7 @@ def get_sunrise_sunset_time(rise_or_set, date):
     else:
         return s['sunset'].strftime('%I:%M:%S %p')
 
-# handler = Mangum(app)
+handler = Mangum(app)
 
 # if __name__ == '__main__':
 #     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
